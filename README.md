@@ -1,81 +1,105 @@
-#   limiter-spring-boot-starter
+# container-limiter
 
-limiter SpringBoot  Edition
+limiter
 
 [中文](./README_zh_CN.md)
 
 Support function：
+
 - [x] Limit Traffic
 - [x] Limited Service
 
 ## Tips:
-  Before Current Limiting, Please Press And Measure The QPS For Accurate Current Limiting  
-  Accurate Flow Restriction Ensures That The Service Will Not Be Shut Down Or Restarted Due To Excessive QPS, And The Service Cluster Is More Robust  
-  The Current Limiting Operation Should Be Divided Into Transactional Operation And Non Transactional Operation, And The QPS Gap Between Them Is Usually Large  
-  Limit Service, For Service That May Cause Delay Or High Error Rate, To Ensure The Security Of Services  
-      
-##  Quick Start
+
+Before Current Limiting, Please Press And Measure The QPS For Accurate Current Limiting  
+Accurate Flow Restriction Ensures That The Service Will Not Be Shut Down Or Restarted Due To Excessive QPS, And The
+Service Cluster Is More Robust  
+The Current Limiting Operation Should Be Divided Into Transactional Operation And Non Transactional Operation, And The
+QPS Gap Between Them Is Usually Large  
+Limit Service, For Service That May Cause Delay Or High Error Rate, To Ensure The Security Of Services
+
+## Quick Start
 
 ```xml
 <!--Adding dependencies to pom. XML-->
-        <dependency>
-            <artifactId>limiter-spring-boot-starter</artifactId>
-            <groupId>io.github.thierrysquirrel</groupId>
-            <version>2.2.0.1-RELEASE</version>
-        </dependency>
+<dependency>
+    <artifactId>container-limiter-loading</artifactId>
+    <groupId>io.github.thierrysquirrel</groupId>
+    <version>1.0.0.0-RELEASE</version>
+</dependency>
 ```
 
-#   Start Limiter
+# Start Using
 
- ```java
- @SpringBootApplication
- public class LimiterApplication{
-     public static void main(String[] args){
-         SpringApplication.run(DemoApplication.class, args);
-     }  
- }
- ```
- 
- #  Limit Traffic
- 
- ```java
-@Slf4j
-@Component
-public class LimitFallback {
-    public String limit(String limit) {
-        log.error (limit);
-        return "LimitFallback";
+```java
+
+@ScannerPackage(packageName = "com.hello.world.web.limiter")
+public class LimiterRegistrationImpl implements InterfaceManualRegistration {
+    @Override
+    public void scannerAll(List<Class<?>> scannerClassList, Map<Class<?>, Object> registrationMap) {
+        LimiterRegistration.limiterRegistrationScannerAll(scannerClassList, registrationMap);
     }
 }
+```
 
- @RestController
- public class limitController {
-    @LimitTraffic (limitName = "limit", permitsPerSecond = 2000, fallbackClass = LimitFallback.class, fallbackMethod = "limit")
- 	public String limit(@RequestParam("limit") String limit) {
- 		return "HelloLimit";
- 	}
- }
+# Limit Traffic
+
+# Limited Service
+
+ ```java
+
+@Limit
+public class LimitFallback {
+    public String limit(String limit) {
+        System.out.println("fallBack" + limit);
+        return "LimitFallback";
+    }
+
+    public String limitedService(String limitedService) {
+        System.out.println("limitedService" + limitedService);
+        return "limitedServiceFallback";
+    }
+
+    @LimitTraffic(limitName = "limit", permitsPerSecond = 1, fallbackClass = LimitFallback.class, fallbackMethod = "limit")
+    public String hello(String limit) {
+        System.out.println("helloWorld" + limit);
+        return "Hello";
+    }
+
+    @LimitedService(fallbackClass = LimitFallback.class, fallbackMethod = "limitedService")
+    public String world(String limitedService) {
+        System.out.println("World::" + limitedService);
+        return "limitedServiceFallback";
+    }
+}
  ```
 
- #  Limited Service
- 
+# Web
+
   ```java
- @Slf4j
- @Component
- public class LimitedServiceFallback {
-     public String limitedService(String limitedService) {
-         log.error (limitedService);
-         return "limitedServiceFallback";
-     }
- }
- 
-  @RestController
-  public class LimitedServiceController {
-     @LimitedService (fallbackClass = LimitedServiceFallback.class, fallbackMethod = "limitedService")
-  	public String limitedService(@RequestParam("limitedService") String limitedService) {
-  		return "limitedService";
-  	}
-  }
+
+@Http("/web")
+public class HttpDemo {
+    @Set
+    private WebLoading webLoading;
+
+    @Set
+    private LimitFallback limitFallback;
+
+    @Get("/limit")
+    public String helloWorld() {
+        String abc = limitFallback.hello("abc");
+        System.out.println(abc);
+        return "OK";
+    }
+
+    @Get("/world")
+    public String world() {
+        String world = limitFallback.world("world");
+        System.out.println(world);
+        return "world";
+    }
+}
   ```
   
 
